@@ -1,0 +1,196 @@
+src/pages/StudentForm.tsx:      const { data } = await supabase.from('classes').select('*').eq('institution_id', madrasah.id);
+src/pages/StudentForm.tsx:    const cls = classes.find(c => c.id === classId);
+src/pages/StudentForm.tsx:        institution_id: madrasah.id
+src/pages/StudentForm.tsx:        await OfflineService.safeUpdate('students', student.id, payload);
+src/pages/StudentForm.tsx:                 <button key={cls.id} onClick={() => { setClassId(cls.id); setShowClassModal(false); }} className={`w-full p-4 rounded-[1.5rem] font-black transition-all flex items-center justify-between border-2 ${classId === cls.id ? 'bg-[#2563EB] border-[#2563EB] text-white shadow-xl' : isDark ? 'bg-slate-900 border-slate-700 text-blue-400' : 'bg-slate-50 border-slate-100 text-[#1E3A8A]'}`}>
+src/pages/StudentForm.tsx:                    {classId === cls.id && <Check size={18} strokeWidth={4} />}
+src/pages/Tutorials.tsx:                key={tutorial.id}
+src/pages/VoiceBroadcast.tsx:  }, [activeTab, madrasah?.id, dataVersion]);
+src/pages/VoiceBroadcast.tsx:    const { data } = await supabase.from('institutions').select('balance').eq('id', madrasah.id).single();
+src/pages/VoiceBroadcast.tsx:        .eq('institution_id', madrasah.id)
+src/pages/VoiceBroadcast.tsx:            (localVoice.provider_voice_id && v.id && v.id.toString() === localVoice.provider_voice_id.toString()) || 
+src/pages/VoiceBroadcast.tsx:            const newProviderId = awajVoice.id ? awajVoice.id.toString() : localVoice.provider_voice_id;
+src/pages/VoiceBroadcast.tsx:              }).eq('id', localVoice.id);
+src/pages/VoiceBroadcast.tsx:      setVoices(voices.filter(v => v.id !== id));
+src/pages/VoiceBroadcast.tsx:          (s.id === madrasah.voice_sender_id)
+src/pages/VoiceBroadcast.tsx:        setSelectedSenderId(sendersList[0].id || sendersList[0].callingNumber || sendersList[0].caller_id);
+src/pages/VoiceBroadcast.tsx:    const { data } = await supabase.from('classes').select('*').eq('institution_id', madrasah.id);
+src/pages/VoiceBroadcast.tsx:    const { data } = await supabase.from('voice_broadcasts').select('*, voice_templates(title)').eq('institution_id', madrasah.id).order('created_at', { ascending: false });
+src/pages/VoiceBroadcast.tsx:              await supabase.from('voice_broadcasts').update({ status: newStatus }).eq('id', broadcast.id);
+src/pages/VoiceBroadcast.tsx:              const { data: updatedData } = await supabase.from('voice_broadcasts').select('*, voice_templates(title)').eq('institution_id', madrasah.id).order('created_at', { ascending: false });
+src/pages/VoiceBroadcast.tsx:      const voice = voices.find(v => v.id === voiceId);
+src/pages/VoiceBroadcast.tsx:      const sender = senders.find(s => s.id === senderId);
+src/pages/VoiceBroadcast.tsx:      const voiceName = voice.name || voice.voice_name || voice.id;
+src/pages/VoiceBroadcast.tsx:      const sNumber = sender.number || sender.sender_id || sender.id;
+src/pages/VoiceBroadcast.tsx:      const campaignId = result.broadcast?.id || result.campaign_id || result.id || result.data?.id || result.data?.campaign_id || result.request_id || requestId;
+src/pages/VoiceBroadcast.tsx:        institution_id: madrasah?.id,
+src/pages/VoiceBroadcast.tsx:        target_id: broadcast.id, // Link to original broadcast
+src/pages/VoiceBroadcast.tsx:      const { error: balanceError } = await supabase.from('institutions').update({ balance: newBalance }).eq('id', madrasah?.id);
+src/pages/VoiceBroadcast.tsx:    if (expandedHistoryId === broadcast.id) {
+src/pages/VoiceBroadcast.tsx:    setExpandedHistoryId(broadcast.id);
+src/pages/VoiceBroadcast.tsx:          if (madrasah?.id) {
+src/pages/VoiceBroadcast.tsx:              .eq('institution_id', madrasah.id);
+src/pages/VoiceBroadcast.tsx:      const voice = voices.find(v => v.id === selectedVoiceId);
+src/pages/VoiceBroadcast.tsx:        (s.id && s.id.toString() === selectedSenderId.toString()) || 
+src/pages/VoiceBroadcast.tsx:      let sNumber = senderObj ? (senderObj.callingNumber || senderObj.caller_id || senderObj.id).toString() : selectedSenderId.toString();
+src/pages/VoiceBroadcast.tsx:      const campaignId = result.broadcast?.id || result.campaign_id || result.id || result.data?.id || result.data?.campaign_id || result.request_id || requestId;
+src/pages/VoiceBroadcast.tsx:        institution_id: madrasah.id,
+src/pages/VoiceBroadcast.tsx:      const { error: balanceError } = await supabase.from('institutions').update({ balance: newBalance }).eq('id', madrasah.id);
+src/pages/VoiceBroadcast.tsx:      const fileName = `${madrasah.id}_${Date.now()}.${fileExt}`;
+src/pages/VoiceBroadcast.tsx:        institution_id: madrasah.id,
+src/pages/VoiceBroadcast.tsx:        institution_id: madrasah.id,
+src/pages/VoiceBroadcast.tsx:    const cls = classes.find(c => c.id === selectedClassId);
+src/pages/VoiceBroadcast.tsx:                            <button key={cls.id} onClick={() => { setSelectedClassId(cls.id); setShowClassDropdown(false); }} className={`w-full text-left px-5 py-3.5 rounded-xl mb-1 ${selectedClassId === cls.id ? 'bg-[#2563EB] text-white' : 'hover:bg-slate-50 text-[#1E3A8A]'}`}>
+src/pages/VoiceBroadcast.tsx:                          {selectedVoiceId ? voices.find(v => v.id === selectedVoiceId)?.title : t('select_voice', lang)}
+src/pages/VoiceBroadcast.tsx:                            <button key={v.id} onClick={() => { setSelectedVoiceId(v.id); setShowVoiceDropdown(false); }} className={`w-full text-left px-5 py-3.5 rounded-xl mb-1 ${selectedVoiceId === v.id ? 'bg-[#2563EB] text-white' : 'hover:bg-slate-50 text-[#1E3A8A]'}`}>
+src/pages/VoiceBroadcast.tsx:                          {selectedSenderId ? (senders.find(s => (s.id || s.callingNumber || s.caller_id) === selectedSenderId)?.callingNumber || selectedSenderId) : t('select_sender_id', lang)}
+src/pages/VoiceBroadcast.tsx:                            <button key={s.id || s.callingNumber || s.caller_id} onClick={() => { setSelectedSenderId(s.id || s.callingNumber || s.caller_id); setShowSenderDropdown(false); }} className={`w-full text-left px-5 py-3.5 rounded-xl mb-1 ${(s.id || s.callingNumber || s.caller_id) === selectedSenderId ? 'bg-[#2563EB] text-white' : 'hover:bg-slate-50 text-[#1E3A8A]'}`}>
+src/pages/VoiceBroadcast.tsx:                              <span className="font-black font-noto">{s.callingNumber || s.caller_id || s.id || s.name}</span>
+src/pages/VoiceBroadcast.tsx:                    <div key={v.id} className="bg-white p-5 rounded-[2.2rem] border border-slate-100 shadow-bubble">
+src/pages/VoiceBroadcast.tsx:                              onClick={() => setShowDeleteConfirm({ id: v.id, providerId: v.provider_voice_id, fileUrl: v.file_url, title: v.title })}
+src/pages/VoiceBroadcast.tsx:                  <div key={h.id} className="bg-white rounded-[2.2rem] border border-slate-100 shadow-bubble overflow-hidden transition-all">
+src/pages/VoiceBroadcast.tsx:                          <ChevronDown size={16} className={`text-slate-300 transition-transform ${expandedHistoryId === h.id ? 'rotate-180' : ''}`} />
+src/pages/VoiceBroadcast.tsx:                    {expandedHistoryId === h.id && (
+src/pages/DataManagement.tsx:        .eq('institution_id', madrasah.id);
+src/pages/DataManagement.tsx:              .eq('institution_id', madrasah.id)
+src/pages/DataManagement.tsx:              classId = existingClass.id;
+src/pages/DataManagement.tsx:                .insert({ institution_id: madrasah.id, class_name: className })
+src/pages/DataManagement.tsx:              classId = newClass.id;
+src/pages/DataManagement.tsx:              .eq('institution_id', madrasah.id)
+src/pages/DataManagement.tsx:                institution_id: madrasah.id,
+src/pages/Students.tsx:        .eq('class_id', selectedClass.id)
+src/pages/Students.tsx:  }, [institutionId, selectedClass.id, page, searchQuery]);
+src/pages/Students.tsx:      setSelectedIds(new Set(students.map(s => s.id)));
+src/pages/Students.tsx:      const selectedStudents = students.filter(s => selectedIds.has(s.id));
+src/pages/Students.tsx:            key={student.id} 
+src/pages/Students.tsx:            onClick={() => isSelectionMode ? (setSelectedIds(prev => { const n = new Set(prev); if(n.has(student.id)) n.delete(student.id); else n.add(student.id); return n; })) : onStudentClick(student)}
+src/pages/Students.tsx:            className={`group p-4 rounded-[2rem] border-2 transition-all flex items-center justify-between shadow-sm hover:shadow-lg active:scale-[0.98] cursor-pointer ${isSelectionMode && selectedIds.has(student.id) ? (isDark ? 'bg-blue-600/20 border-[#2563EB] shadow-[#2563EB]/20' : 'bg-blue-50 border-[#2563EB] shadow-[#2563EB]/10') : (isDark ? 'bg-slate-800 border-slate-700 hover:border-[#2563EB]/40 hover:bg-slate-700/50' : 'bg-white border-slate-100 hover:border-[#2563EB]/20')}`}
+src/pages/Students.tsx:                <div className={`w-14 h-14 rounded-[1rem] flex flex-col items-center justify-center shrink-0 border-2 shadow-inner transition-all duration-300 ${isSelectionMode && selectedIds.has(student.id) ? 'bg-[#2563EB] text-white border-[#2563EB]' : (isDark ? 'bg-slate-800 text-blue-400 border-slate-700 group-hover:bg-slate-700 group-hover:border-[#2563EB]/40' : 'bg-slate-50 text-[#2563EB] border-slate-100 group-hover:bg-blue-50 group-hover:border-[#2563EB]/20')}`}>
+src/pages/Students.tsx:                  <span className={`text-[8px] font-black leading-none uppercase tracking-widest ${isSelectionMode && selectedIds.has(student.id) ? 'opacity-70' : 'opacity-40'}`}>{t('roll', lang)}</span>
+src/pages/Students.tsx:                  <div className={`absolute -top-1.5 -right-1.5 w-6 h-6 rounded-lg flex items-center justify-center shadow-lg border-2 transition-all duration-300 ${selectedIds.has(student.id) ? 'bg-[#2563EB] text-white border-white scale-110' : (isDark ? 'bg-slate-800 text-slate-600 border-slate-700' : 'bg-white text-slate-200 border-slate-100')}`}>
+src/pages/Students.tsx:                  <button key={tmp.id} onClick={() => { setSelectedTemplate(tmp); setShowTemplateMenu(false); }} className={`w-full text-left px-4 py-3 rounded-lg flex items-center justify-between ${selectedTemplate?.id === tmp.id ? 'bg-[#2563EB] text-white shadow-xl' : (isDark ? 'hover:bg-slate-700' : 'hover:bg-slate-50')}`}>
+src/pages/Students.tsx:                    {selectedTemplate?.id === tmp.id && <Check size={16} strokeWidth={4} />}
+src/pages/Students.tsx:              {canSendFreeSMS && <button onClick={() => { if(!selectedTemplate) return; const phones = students.filter(s => selectedIds.has(s.id)).map(s => s.guardian_phone).join(','); window.location.href = `sms:${phones}?body=${encodeURIComponent(selectedTemplate.body)}`; }} disabled={!selectedTemplate} className="h-11 bg-[#1E3A8A] text-white rounded-full font-black text-[9px] uppercase shadow-lg flex items-center justify-center gap-2"><Smartphone size={14} fill="currentColor" /> {t('native_sms', lang)}</button>}
+src/pages/Auth.tsx:              p_uid: data.user.id,
+src/pages/Auth.tsx:        if (isValidUUID(data.user.id)) {
+src/pages/Auth.tsx:          const { data: profile } = await supabase.from('institutions').select('name').eq('id', data.user.id).maybeSingle();
+src/pages/Accounting.tsx:  }, [madrasah?.id, activeTab]);
+src/pages/Accounting.tsx:    if (!madrasah?.id) return;
+src/pages/Accounting.tsx:    const { data } = await supabase.from('classes').select('*').eq('institution_id', madrasah.id);
+src/pages/Accounting.tsx:    if (!madrasah?.id) return;
+src/pages/Accounting.tsx:        const { data } = await supabase.from('ledger').select('*').eq('institution_id', madrasah.id).order('transaction_date', { ascending: false });
+src/pages/Accounting.tsx:        institution_id: madrasah.id,
+src/pages/Accounting.tsx:                institutionId={madrasah.id} 
+src/pages/Accounting.tsx:                  <div key={entry.id} className={`group p-5 rounded-[2.5rem] border-2 transition-all flex items-center justify-between shadow-sm hover:shadow-lg active:scale-[0.98] ${isDark ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-100 hover:border-blue-100'}`}>
+src/pages/Attendance.tsx:  }, [madrasah?.id]);
+src/pages/Attendance.tsx:        fetchStudents(selectedClass.id);
+src/pages/Attendance.tsx:      else fetchReport(selectedClass.id);
+src/pages/Attendance.tsx:  }, [selectedClass?.id, activeTab, date, selectedMonth, reportType, selectedYear]);
+src/pages/Attendance.tsx:        .eq('institution_id', madrasah.id)
+src/pages/Attendance.tsx:    const { data } = await supabase.from('classes').select('*').eq('institution_id', madrasah?.id);
+src/pages/Attendance.tsx:        filteredClasses = data.filter(cls => profile.permissions?.allowed_classes?.includes(cls.id));
+src/pages/Attendance.tsx:          const existing = attData?.find(a => a.student_id === s.id);
+src/pages/Attendance.tsx:          initial[s.id] = existing ? (existing.status as any) : 'present';
+src/pages/Attendance.tsx:      const { error: delError } = await supabase.from('attendance').delete().eq('class_id', selectedClass.id).eq('date', date);
+src/pages/Attendance.tsx:        institution_id: madrasah.id,
+src/pages/Attendance.tsx:        class_id: selectedClass.id,
+src/pages/Attendance.tsx:    const absents = students.filter(s => attendance[s.id] === 'absent');
+src/pages/Attendance.tsx:      await smsApi.sendBulk(madrasah.id, absents, message);
+src/pages/Attendance.tsx:        .eq('id', madrasah.id);
+src/pages/Attendance.tsx:          <button onClick={() => selectedClass && (activeTab === 'daily' ? fetchStudents(selectedClass.id) : fetchReport(selectedClass.id))} className={`w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-all ${isDark ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-slate-50 text-slate-400'}`}><RefreshCw size={18} /></button>
+src/pages/Attendance.tsx:                <button key={cls.id} onClick={() => { setSelectedClass(cls); setShowClassDropdown(false); }} className={`w-full text-left px-5 py-4 rounded-xl mb-1 transition-all ${selectedClass?.id === cls.id ? 'bg-[#2563EB] text-white shadow-premium' : (isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-50 text-slate-700')}`}>
+src/pages/Attendance.tsx:                     <div key={s.id} className={`p-4 rounded-[1.8rem] border shadow-bubble flex items-center justify-between group active:scale-[0.98] transition-all ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-100'}`}>
+src/pages/Attendance.tsx:                           <button onClick={() => setStatus(s.id, 'present')} className={`w-11 h-11 rounded-[1.1rem] flex items-center justify-center transition-all ${attendance[s.id] === 'present' ? 'bg-emerald-500 text-white shadow-lg' : (isDark ? 'bg-slate-900 text-slate-600 border border-slate-700' : 'bg-slate-50 text-slate-300')}`} title="Present"><CheckCircle size={22}/></button>
+src/pages/Attendance.tsx:                           <button onClick={() => setStatus(s.id, 'absent')} className={`w-11 h-11 rounded-[1.1rem] flex items-center justify-center transition-all ${attendance[s.id] === 'absent' ? 'bg-red-500 text-white shadow-lg' : (isDark ? 'bg-slate-900 text-slate-600 border border-slate-700' : 'bg-slate-50 text-slate-300')}`} title="Absent"><XCircle size={22}/></button>
+src/pages/Attendance.tsx:                           <button onClick={() => setStatus(s.id, 'late')} className={`w-11 h-11 rounded-[1.1rem] flex items-center justify-center transition-all ${attendance[s.id] === 'late' ? 'bg-amber-500 text-white shadow-lg' : (isDark ? 'bg-slate-900 text-slate-600 border border-slate-700' : 'bg-slate-50 text-slate-300')}`} title="Late"><Clock size={22}/></button>
+src/pages/Attendance.tsx:                           <button onClick={() => setStatus(s.id, 'half_day')} className={`w-11 h-11 rounded-[1.1rem] flex items-center justify-center transition-all ${attendance[s.id] === 'half_day' ? 'bg-purple-500 text-white shadow-lg' : (isDark ? 'bg-slate-900 text-slate-600 border border-slate-700' : 'bg-slate-50 text-slate-300')}`} title="Half Day"><span className="text-xs font-black">1/2</span></button>
+src/pages/StudentDetails.tsx:        .eq('id', student.id);
+src/pages/Classes.tsx:    if (madrasah?.id) {
+src/pages/Classes.tsx:  }, [dataVersion, madrasah?.id]);
+src/pages/Classes.tsx:          .eq('institution_id', madrasah.id);
+src/pages/Classes.tsx:            filteredClasses = classesData.filter(cls => profile.permissions?.allowed_classes?.includes(cls.id));
+src/pages/Classes.tsx:              .eq('class_id', cls.id);
+src/pages/Classes.tsx:          }).eq('id', editingClass.id);
+src/pages/Classes.tsx:            id: editingClass.id, 
+src/pages/Classes.tsx:          institution_id: madrasah.id,
+src/pages/Classes.tsx:        const { error } = await supabase.from('classes').delete().eq('id', showDeleteConfirm.id);
+src/pages/Classes.tsx:        offlineApi.queueAction('classes', 'DELETE', { id: showDeleteConfirm.id });
+src/pages/Classes.tsx:            <div key={cls.id} onClick={() => onClassClick(cls)} className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} p-4 sm:p-5 rounded-[2.2rem] border flex items-center justify-between active:scale-[0.98] transition-all group shadow-bubble relative overflow-hidden`}>
+src/pages/TeacherManagement.tsx:  }, [madrasah?.id]);
+src/pages/TeacherManagement.tsx:    if (!madrasah?.id) return;
+src/pages/TeacherManagement.tsx:        .eq('institution_id', madrasah.id)
+src/pages/TeacherManagement.tsx:    if (!madrasah?.id) return;
+src/pages/TeacherManagement.tsx:      const response = await fetch(`/api/teachers/list?institute_id=${madrasah.id}`);
+src/pages/TeacherManagement.tsx:    if (!madrasah?.id) return;
+src/pages/TeacherManagement.tsx:        institute_id: madrasah.id,
+src/pages/TeacherManagement.tsx:          institute_id: madrasah.id,
+src/pages/TeacherManagement.tsx:        id: selectedTeacher.id,
+src/pages/TeacherManagement.tsx:          id: selectedTeacher.id,
+src/pages/TeacherManagement.tsx:                key={teacher.id}
+src/pages/TeacherManagement.tsx:                    onClick={() => handleDeleteTeacher(teacher.id)}
+src/pages/TeacherManagement.tsx:                        const isSelected = permissions.allowed_classes?.includes(cls.id);
+src/pages/TeacherManagement.tsx:                            key={cls.id}
+src/pages/TeacherManagement.tsx:                                ? current.filter(id => id !== cls.id)
+src/pages/TeacherManagement.tsx:                                : [...current, cls.id];
+src/pages/AdminPanel.tsx:            const existing = madrasahs.find(ex => ex.id === m.id);
+src/pages/AdminPanel.tsx:            if (newSmsMap[tr.id] === undefined) newSmsMap[tr.id] = true;
+src/pages/AdminPanel.tsx:        supabase.from('students').select('*', { count: 'exact', head: true }).eq('institution_id', user.id),
+src/pages/AdminPanel.tsx:        supabase.from('classes').select('*', { count: 'exact', head: true }).eq('institution_id', user.id)
+src/pages/AdminPanel.tsx:      }).eq('id', selectedUser.id).select();
+src/pages/AdminPanel.tsx:            p_user_id: selectedUser.id,
+src/pages/AdminPanel.tsx:              p_user_id: selectedUser.id,
+src/pages/AdminPanel.tsx:    const sms = Number(smsToCredit[tr.id]);
+src/pages/AdminPanel.tsx:    setApprovingIds(prev => new Set(prev).add(tr.id));
+src/pages/AdminPanel.tsx:        const { error: updateError } = await supabase.from('transactions').update({ status: 'approved' }).eq('id', tr.id);
+src/pages/AdminPanel.tsx:          t_id: tr.id, 
+src/pages/AdminPanel.tsx:      const isSmsEnabled = smsEnabledMap[tr.id] !== false;
+src/pages/AdminPanel.tsx:      setPendingTrans(prev => prev.filter(p => p.id !== tr.id));
+src/pages/AdminPanel.tsx:        next.delete(tr.id);
+src/pages/AdminPanel.tsx:      const { error } = await supabase.from('transactions').update({ status: 'rejected' }).eq('id', rejectConfirm.id);
+src/pages/AdminPanel.tsx:      setPendingTrans(prev => prev.filter(p => p.id !== rejectConfirm.id));
+src/pages/AdminPanel.tsx:      let newUserId = signUpData?.user?.id;
+src/pages/AdminPanel.tsx:                      <div key={inst.id} className={`flex items-center justify-between p-4 rounded-2xl ${madrasah?.theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'} border`}>
+src/pages/AdminPanel.tsx:                    <div key={tr.id} className={`flex items-center justify-between p-4 rounded-2xl ${madrasah?.theme === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'} border`}>
+src/pages/AdminPanel.tsx:                  <div key={m.id} onClick={() => handleUserClick(m)} className={`${madrasah?.theme === 'dark' ? 'bg-slate-900 border-slate-800 shadow-none hover:border-blue-900' : 'bg-white border-slate-100 shadow-bubble hover:border-[#2563EB]/30'} p-5 rounded-[2.2rem] border active:scale-[0.98] transition-all cursor-pointer`}>
+src/pages/AdminPanel.tsx:                    <div key={tr.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-bubble space-y-4 animate-in slide-in-from-left-4">
+src/pages/AdminPanel.tsx:                           <MessageSquare size={16} className={smsEnabledMap[tr.id] ? "text-[#2563EB]" : "text-slate-300"} />
+src/pages/AdminPanel.tsx:                        <button onClick={() => toggleSmsForRequest(tr.id)} className="transition-all active:scale-90">
+src/pages/AdminPanel.tsx:                           {smsEnabledMap[tr.id] ? (
+src/pages/AdminPanel.tsx:                              disabled={approvingIds.has(tr.id)}
+src/pages/AdminPanel.tsx:                              value={smsToCredit[tr.id] || ''} 
+src/pages/AdminPanel.tsx:                              onChange={(e) => setSmsToCredit({...smsToCredit, [tr.id]: e.target.value})} 
+src/pages/AdminPanel.tsx:                            disabled={approvingIds.has(tr.id) || (paymentTab === 'sms' && !smsToCredit[tr.id])}
+src/pages/AdminPanel.tsx:                            {approvingIds.has(tr.id) ? <Loader2 className="animate-spin" size={20} /> : 'অনুমোদন দিন'}
+src/pages/AdminPanel.tsx:                          disabled={approvingIds.has(tr.id)}
+src/pages/AdminPanel.tsx:                    <div key={tr.id} className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-bubble flex items-center justify-between">
+src/pages/AdminPanel.tsx:                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">UUID: {selectedUser.id}</p>
+src/pages/WalletSMS.tsx:  }, [activeTab, madrasah?.id, dataVersion]);
+src/pages/WalletSMS.tsx:    const { data } = await supabase.from('classes').select('*').eq('institution_id', madrasah.id);
+src/pages/WalletSMS.tsx:    const { data } = await supabase.from('sms_templates').select('*').eq('institution_id', madrasah.id).order('created_at', { ascending: false });
+src/pages/WalletSMS.tsx:        await supabase.from('sms_templates').insert({ institution_id: madrasah.id, title: tempTitle, body: tempBody });
+src/pages/WalletSMS.tsx:      await supabase.from('sms_templates').delete().eq('id', showDeleteConfirm.id);
+src/pages/WalletSMS.tsx:      .eq('institution_id', madrasah.id)
+src/pages/WalletSMS.tsx:        institution_id: madrasah.id,
+src/pages/WalletSMS.tsx:      await smsApi.sendBulk(madrasah.id, classStudents, bulkMessage);
+src/pages/WalletSMS.tsx:    const cls = classes.find(c => c.id === selectedClassId);
+src/pages/WalletSMS.tsx:    if (!madrasah?.id) return;
+src/pages/WalletSMS.tsx:      const history = await smsApi.getHistory(madrasah.id);
+src/pages/WalletSMS.tsx:  }, [activeTab, madrasah?.id]);
+src/pages/WalletSMS.tsx:                    <div key={tmp.id} className="bg-white p-5 rounded-[2.2rem] border border-slate-100 shadow-bubble relative group flex flex-col">
+src/pages/WalletSMS.tsx:                             <button onClick={() => { setEditingId(tmp.id); setTempTitle(tmp.title); setTempBody(tmp.body); setShowAddModal(true); }} className="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center active:scale-90 transition-all"><Edit3 size={14}/></button>
+src/pages/WalletSMS.tsx:                            <button key={cls.id} onClick={() => { setSelectedClassId(cls.id); setShowClassDropdown(false); }} className={`w-full text-left px-5 py-3.5 rounded-xl mb-1 ${selectedClassId === cls.id ? 'bg-[#2563EB] text-white' : 'hover:bg-slate-50 text-[#1E3A8A]'}`}>
+src/pages/WalletSMS.tsx:                            <button key={tmp.id} onClick={() => { setBulkMessage(tmp.body); setShowTemplateDropdownBulk(false); }} className="w-full text-left px-5 py-3.5 rounded-xl mb-1 hover:bg-slate-50">
+src/pages/WalletSMS.tsx:                    <div key={tr.id} className={`${madrasah?.theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'} p-4 rounded-[1.8rem] border flex items-center justify-between shadow-bubble`}>
+src/pages/AcademicCalendarPage.tsx:            institutionId={madrasah?.id} 
+src/pages/Account.tsx:      const { error } = await supabase.from('institutions').update({ theme: newTheme }).eq('id', madrasah.id);
+src/pages/Account.tsx:      const { data: profile } = await supabase.from('institutions').select('*').eq('id', initialMadrasah.id).maybeSingle();
+src/pages/Account.tsx:        supabase.from('students').select('*', { count: 'exact', head: true }).eq('institution_id', initialMadrasah.id),
+src/pages/Account.tsx:        supabase.from('classes').select('*', { count: 'exact', head: true }).eq('institution_id', initialMadrasah.id)
+src/pages/Account.tsx:      }).eq('id', madrasah.id);
+src/pages/Account.tsx:      const fileName = `logo_${madrasah.id}_${Date.now()}`;
+src/pages/Account.tsx:      const { error: updateErr } = await supabase.from('institutions').update({ logo_url: publicUrl }).eq('id', madrasah.id);
+src/pages/Account.tsx:        .eq('user_id', profile?.id);
+src/pages/Account.tsx:              {madrasah && madrasah.id !== 'super_admin' && (
+src/pages/Account.tsx:             {madrasah && madrasah.id !== 'super_admin' && (
+src/pages/Account.tsx:                    <div onClick={() => copyToClipboard(madrasah.id)} className={`p-5 rounded-[2.5rem] border flex items-center gap-5 active:scale-[0.98] cursor-pointer group ${madrasah?.theme === 'dark' ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-50/70 border-slate-100'}`}>
+src/pages/Account.tsx:                          <p className={`text-[12px] font-black truncate ${madrasah?.theme === 'dark' ? 'text-blue-400' : 'text-[#2563EB]'}`}>{madrasah.id}</p>

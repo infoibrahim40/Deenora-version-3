@@ -1,0 +1,597 @@
+
+-- ==========================================
+-- 0. EXTENSIONS
+-- ==========================================
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS btree_gin;
+
+-- Enable pgcrypto for password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Function to create a user with password directly in auth.users
+-- This bypasses API rate limits for Super Admins
+CREATE OR REPLACE FUNCTION public.create_user_by_admin(
+  p_email text,
+  p_password text,
+  p_user_data jsonb
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+  v_new_id uuid;
+  v_encrypted_pw text;
+  v_instance_id uuid;
+BEGIN
+  -- 1. Check if caller is super_admin
+  IF NOT public.is_super_admin() THEN
+    RAISE EXCEPTION 'Access Denied: Only Super Admins can create users directly.';
+  END IF;
+
+  -- 2. Check if user already exists
+  IF EXISTS (SELECT 1 FROM auth.users WHERE email = p_email) THEN
+    RAISE EXCEPTION 'User with this email already exists.';
+  END IF;
+
+  -- 3. Get instance_id
+  SELECT id INTO v_instance_id FROM auth.instances LIMIT 1;
+  IF v_instance_id IS NULL THEN
+     v_instance_id := '00000000-0000-0000-0000-000000000000';
+  END IF;
+
+  v_new_id := gen_random_uuid();
+  v_encrypted_pw := crypt(p_password, gen_salt('bf'));
+
+  -- 4. Insert into auth.users
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    recovery_token,
+    is_super_admin
+  ) VALUES (
+    v_instance_id,
+    v_new_id,
+    'authenticated',
+    'authenticated',
+    p_email,
+    v_encrypted_pw,
+    now(), -- Auto confirm email
+    p_user_data,
+    now(),
+    now(),
+    '',
+    '',
+    false
+  );
+
+  -- 5. Create identity
+  INSERT INTO auth.identities (
+    id,
+    user_id,
+    identity_data,
+    provider,
+    provider_id,
+    last_sign_in_at,
+    created_at,
+    updated_at
+  ) VALUES (
+    v_new_id,
+    v_new_id,
+    format('{"sub":"%s","email":"%s"}', v_new_id, p_email)::jsonb,
+    'email',
+    v_new_id::text,
+    now(),
+    now(),
+    now()
+  );
+
+  RETURN v_new_id;
+END;
+$$;
+
+-- ==========================================
+-- 1. CORE TABLES DEFINITION
+-- ==========================================
+
+-- Institutions Table (Renamed from madrasahs for SaaS)
+CREATE TABLE IF NOT EXISTS public.institutions (
+  id UUID PRIMARY KEY, 
+  name TEXT NOT NULL,
+  email TEXT,
+  address TEXT,
+  phone TEXT,
+  logo_url TEXT,
+  institution_type TEXT DEFAULT 'madrasah', -- madrasah, school, kindergarten, nurani
+  config_json JSONB DEFAULT '{
+    "modules": {
+      "attendance": true,
+      "fees": true,
+      "results": true,
+      "admit_card": true,
+      "seat_plan": true,
+      "accounting": true
+    },
+    "result_system": "grading",
+    "attendance_type": "daily",
+    "fee_structure": "monthly",
+    "ui_mode": "madrasah"
+  }'::jsonb,
+  theme TEXT DEFAULT 'default',
+  status TEXT DEFAULT 'active', -- active, suspended, trial
+  is_active BOOLEAN DEFAULT true,
+  is_super_admin BOOLEAN DEFAULT false,
+  balance NUMERIC DEFAULT 0,
+  sms_balance INTEGER DEFAULT 0,
+  reve_api_key TEXT,
+  reve_secret_key TEXT,
+  reve_caller_id TEXT,
+  reve_client_id TEXT,
+  voice_sender_id TEXT,
+  subscription_end DATE,
+  login_code TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure columns exist if table was already created
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'config_json') THEN
+        ALTER TABLE public.institutions ADD COLUMN config_json JSONB DEFAULT '{
+            "modules": {
+              "attendance": true,
+              "fees": true,
+              "results": true,
+              "admit_card": true,
+              "seat_plan": true,
+              "accounting": true
+            },
+            "result_system": "grading",
+            "attendance_type": "daily",
+            "fee_structure": "monthly",
+            "ui_mode": "madrasah"
+          }'::jsonb;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'theme') THEN
+        ALTER TABLE public.institutions ADD COLUMN theme TEXT DEFAULT 'default';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'status') THEN
+        ALTER TABLE public.institutions ADD COLUMN status TEXT DEFAULT 'active';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'subscription_end') THEN
+        ALTER TABLE public.institutions ADD COLUMN subscription_end DATE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'voice_sender_id') THEN
+        ALTER TABLE public.institutions ADD COLUMN voice_sender_id TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'address') THEN
+        ALTER TABLE public.institutions ADD COLUMN address TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'email') THEN
+        ALTER TABLE public.institutions ADD COLUMN email TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'reve_api_key') THEN
+        ALTER TABLE public.institutions ADD COLUMN reve_api_key TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'reve_secret_key') THEN
+        ALTER TABLE public.institutions ADD COLUMN reve_secret_key TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'reve_caller_id') THEN
+        ALTER TABLE public.institutions ADD COLUMN reve_caller_id TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'institutions' AND column_name = 'reve_client_id') THEN
+        ALTER TABLE public.institutions ADD COLUMN reve_client_id TEXT;
+    END IF;
+END $$;
+
+-- Force schema cache reload
+NOTIFY pgrst, 'reload config';
+
+-- Institution Modules Table
+CREATE TABLE IF NOT EXISTS public.institution_modules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  module_code TEXT NOT NULL, -- attendance, fees, results, etc.
+  enabled BOOLEAN DEFAULT true,
+  activated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(institution_id, module_code)
+);
+
+-- User Profiles Table
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'madrasah_admin', -- super_admin, madrasah_admin, teacher, accountant
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Classes Table
+CREATE TABLE IF NOT EXISTS public.classes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  class_name TEXT NOT NULL,
+  sort_order INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Students Table
+CREATE TABLE IF NOT EXISTS public.students (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+  student_name TEXT NOT NULL,
+  roll INTEGER,
+  guardian_name TEXT,
+  guardian_phone TEXT NOT NULL,
+  guardian_phone_2 TEXT,
+  photo_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(class_id, roll)
+);
+
+-- Teachers Table
+CREATE TABLE IF NOT EXISTS public.teachers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL UNIQUE,
+  login_code TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  permissions JSONB DEFAULT '{"can_manage_students": true, "can_manage_classes": false, "can_send_sms": false, "can_send_free_sms": false}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Fee Structures Table
+CREATE TABLE IF NOT EXISTS public.fee_structures (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+  fee_name TEXT NOT NULL,
+  amount NUMERIC NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Fees Table
+CREATE TABLE IF NOT EXISTS public.fees (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+  amount_paid NUMERIC NOT NULL DEFAULT 0,
+  amount_due NUMERIC DEFAULT 0,
+  discount NUMERIC DEFAULT 0,
+  month TEXT NOT NULL,
+  status TEXT DEFAULT 'paid',
+  paid_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure columns exist if table was already created
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fees' AND column_name = 'amount_due') THEN
+        ALTER TABLE public.fees ADD COLUMN amount_due NUMERIC DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fees' AND column_name = 'discount') THEN
+        ALTER TABLE public.fees ADD COLUMN discount NUMERIC DEFAULT 0;
+    END IF;
+END $$;
+
+-- Ledger Table
+CREATE TABLE IF NOT EXISTS public.ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  category TEXT NOT NULL,
+  amount NUMERIC NOT NULL DEFAULT 0,
+  description TEXT,
+  transaction_date DATE DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Attendance Table
+CREATE TABLE IF NOT EXISTS public.attendance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+  status TEXT NOT NULL,
+  date DATE DEFAULT CURRENT_DATE,
+  recorded_by UUID,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Exams Table
+CREATE TABLE IF NOT EXISTS public.exams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE,
+  exam_name TEXT NOT NULL,
+  exam_date DATE,
+  is_published BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Exam Subjects
+CREATE TABLE IF NOT EXISTS public.exam_subjects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID REFERENCES public.exams(id) ON DELETE CASCADE,
+  subject_name TEXT NOT NULL,
+  full_marks INTEGER DEFAULT 100,
+  pass_marks INTEGER DEFAULT 33
+);
+
+-- Exam Marks
+CREATE TABLE IF NOT EXISTS public.exam_marks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID REFERENCES public.exams(id) ON DELETE CASCADE,
+  student_id UUID REFERENCES public.students(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES public.exam_subjects(id) ON DELETE CASCADE,
+  marks_obtained NUMERIC DEFAULT 0,
+  UNIQUE(exam_id, student_id, subject_id)
+);
+
+-- SMS Templates
+CREATE TABLE IF NOT EXISTS public.sms_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Transactions
+CREATE TABLE IF NOT EXISTS public.transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES public.institutions(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  transaction_id TEXT NOT NULL,
+  sender_phone TEXT,
+  description TEXT,
+  status TEXT DEFAULT 'pending',
+  sms_count INTEGER,
+  type TEXT DEFAULT 'credit',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================
+-- 2. AUTH SYNC AUTOMATION
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_full_name TEXT;
+    v_institution_name TEXT;
+BEGIN
+    v_full_name := COALESCE(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1));
+    v_institution_name := COALESCE(new.raw_user_meta_data->>'madrasah_name', v_full_name || ' Institution');
+
+    -- Check if this is the designated super admin email
+    IF new.email = 'kmibrahim@gmail.com' OR new.email = 'thedevomix@gmail.com' THEN
+        INSERT INTO public.institutions (id, name, email, is_active, is_super_admin, balance, sms_balance, institution_type)
+        VALUES (new.id, 'Deenora System', new.email, true, true, 0, 0, 'system')
+        ON CONFLICT ON CONSTRAINT institutions_pkey DO UPDATE SET is_super_admin = true, email = EXCLUDED.email;
+
+        INSERT INTO public.profiles (id, institution_id, full_name, role, is_active)
+        VALUES (new.id, NULL, v_full_name, 'super_admin', true)
+        ON CONFLICT ON CONSTRAINT profiles_pkey DO UPDATE SET role = 'super_admin', institution_id = NULL;
+    ELSE
+        INSERT INTO public.institutions (id, name, email, is_active, is_super_admin, balance, sms_balance, institution_type)
+        VALUES (new.id, v_institution_name, new.email, true, false, 0, 0, 'madrasah')
+        ON CONFLICT ON CONSTRAINT institutions_pkey DO UPDATE SET email = EXCLUDED.email;
+
+        INSERT INTO public.profiles (id, institution_id, full_name, role, is_active)
+        VALUES (new.id, new.id, v_full_name, 'madrasah_admin', true)
+        ON CONFLICT ON CONSTRAINT profiles_pkey DO UPDATE SET institution_id = EXCLUDED.institution_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
+
+-- ==========================================
+-- 3. SYSTEM TABLES
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.system_settings (
+  id UUID PRIMARY KEY DEFAULT '00000000-0000-0000-0000-000000000001',
+  reve_api_key TEXT,
+  reve_secret_key TEXT,
+  reve_caller_id TEXT,
+  reve_client_id TEXT,
+  bkash_number TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO public.system_settings (id, bkash_number)
+VALUES ('00000000-0000-0000-0000-000000000001', '01700000000')
+ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================
+-- 4. ROW LEVEL SECURITY (RLS)
+-- ==========================================
+
+-- Helper functions to avoid recursion
+CREATE OR REPLACE FUNCTION public.is_super_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'super_admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.get_my_institution_id()
+RETURNS UUID AS $$
+DECLARE
+  v_inst_id UUID;
+BEGIN
+  SELECT institution_id INTO v_inst_id
+  FROM public.profiles
+  WHERE id = auth.uid();
+  
+  RETURN v_inst_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Enable RLS on all tables
+ALTER TABLE public.institutions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teachers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fee_structures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ledger ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exam_subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exam_marks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sms_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+
+-- Policies for Institutions
+DROP POLICY IF EXISTS "Super admins can do everything on institutions" ON public.institutions;
+CREATE POLICY "Super admins can do everything on institutions" ON public.institutions
+  FOR ALL USING (public.is_super_admin());
+
+DROP POLICY IF EXISTS "Users can view their own institution" ON public.institutions;
+CREATE POLICY "Users can view their own institution" ON public.institutions
+  FOR SELECT USING (id = public.get_my_institution_id());
+
+-- Policies for Profiles
+DROP POLICY IF EXISTS "Super admins can view all profiles" ON public.profiles;
+CREATE POLICY "Super admins can view all profiles" ON public.profiles
+  FOR SELECT USING (public.is_super_admin());
+
+DROP POLICY IF EXISTS "Users can view profiles in their institution" ON public.profiles;
+CREATE POLICY "Users can view profiles in their institution" ON public.profiles
+  FOR SELECT USING (institution_id = public.get_my_institution_id());
+
+-- Generic Policy for Tenant Isolation
+-- We can't use a generic function easily in SQL script without defining it first, 
+-- so we'll write them out for major tables.
+
+DROP POLICY IF EXISTS "Tenant isolation for classes" ON public.classes;
+CREATE POLICY "Tenant isolation for classes" ON public.classes
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for students" ON public.students;
+CREATE POLICY "Tenant isolation for students" ON public.students
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for teachers" ON public.teachers;
+CREATE POLICY "Tenant isolation for teachers" ON public.teachers
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for fee_structures" ON public.fee_structures;
+CREATE POLICY "Tenant isolation for fee_structures" ON public.fee_structures
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for fees" ON public.fees;
+CREATE POLICY "Tenant isolation for fees" ON public.fees
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for ledger" ON public.ledger;
+CREATE POLICY "Tenant isolation for ledger" ON public.ledger
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for attendance" ON public.attendance;
+CREATE POLICY "Tenant isolation for attendance" ON public.attendance
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for exams" ON public.exams;
+CREATE POLICY "Tenant isolation for exams" ON public.exams
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for sms_templates" ON public.sms_templates;
+CREATE POLICY "Tenant isolation for sms_templates" ON public.sms_templates
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP POLICY IF EXISTS "Tenant isolation for transactions" ON public.transactions;
+CREATE POLICY "Tenant isolation for transactions" ON public.transactions
+  FOR ALL USING (
+    institution_id = public.get_my_institution_id()
+    OR public.is_super_admin()
+  );
+
+DROP FUNCTION IF EXISTS public.get_monthly_dues_report(uuid, uuid, text) CASCADE;
+CREATE OR REPLACE FUNCTION public.get_monthly_dues_report(p_class_id UUID, p_institution_id UUID, p_month TEXT)
+RETURNS TABLE (
+  student_id UUID,
+  student_name TEXT,
+  roll INTEGER,
+  guardian_phone TEXT,
+  total_due NUMERIC,
+  paid_amount NUMERIC,
+  status TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    s.id as student_id,
+    s.student_name,
+    s.roll,
+    s.guardian_phone,
+    COALESCE(f.amount_due, 0) as total_due,
+    COALESCE(f.amount_paid, 0) as paid_amount,
+    COALESCE(f.status, 'unpaid') as status
+  FROM public.students s
+  LEFT JOIN public.fees f ON s.id = f.student_id AND f.month = p_month
+  WHERE s.class_id = p_class_id AND s.institution_id = p_institution_id
+  ORDER BY s.roll ASC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
